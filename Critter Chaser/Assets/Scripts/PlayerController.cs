@@ -4,37 +4,96 @@ using UnityEngine;
 
 public class PlayerController : MonoBehaviour
 {
-    public float moveSpeed;
+    public float maxMoveSpeed;
+    public float moveSpeedAcceleration;
+    public float moveSpeedDeacceleration;
+    private float currentMoveSpeed;
+    public float jumpForce;
+    public CharacterController characterController;
+    public Transform cameraPivot;
+    public Transform playerCamera;
+    public Transform playerGraphics;
+    public Animator animator;
 
-    private Rigidbody rb;
-    private Transform cameraPos;
-    
-    // Start is called before the first frame update
-    void Start()
-    {
-        rb = GetComponent<Rigidbody>();
-        cameraPos = transform.GetChild(0).GetChild(0);
-    }
+    private Vector3 moveDirection;
+    Vector3 lookDirection;
+    Vector3 inputDirection;
+    public float gravityScale;
 
-    Vector3 moveDirection = Vector3.zero; 
-    Vector3 auxPoint = Vector3.zero;
-    // Update is called once per frame
-    void Update()
+    public float rotationSpeed;
+
+    private bool isJumping;
+    float vertical, horizontal;
+
+    private void Update()
     {
-        CalculateMoveDirection();
-        Debug.Log(moveDirection);
-        if (Input.GetKey(KeyCode.W))
+        vertical = Input.GetAxisRaw("Vertical");
+        horizontal = Input.GetAxisRaw("Horizontal");
+        if (vertical != 0f || horizontal != 0f)
         {
-            rb.MovePosition(transform.position + moveDirection * moveSpeed * Time.deltaTime);
+            Vector3 lookDirection = GetMoveDirection();
+            lookDirection.y = 0f;
+
+            Quaternion newRotation = Quaternion.LookRotation(new Vector3(lookDirection.x, 0f, lookDirection.z));
+            playerGraphics.rotation = Quaternion.Slerp(playerGraphics.rotation, newRotation, rotationSpeed * Time.deltaTime);
+
+            if(currentMoveSpeed < maxMoveSpeed)
+            {
+                currentMoveSpeed += moveSpeedAcceleration;
+            }
+            animator.SetFloat("InputMove", currentMoveSpeed/maxMoveSpeed);
         }
+        else
+        {
+            if(currentMoveSpeed > 0 && characterController.isGrounded)
+            {
+                currentMoveSpeed -= moveSpeedDeacceleration;
+                if (currentMoveSpeed < 0)
+                {
+                    currentMoveSpeed = 0;
+                }
+                animator.SetFloat("InputMove", currentMoveSpeed / maxMoveSpeed);
+            }
+        }
+
+        if (characterController.isGrounded)
+        {
+            isJumping = false;
+            animator.SetFloat("Jumping", 0);
+            moveDirection.y = 0f;
+
+            if (Input.GetButtonDown("Jump"))
+            {
+                moveDirection.y = jumpForce;
+                isJumping = true;
+            }
+        }
+        else
+        {
+            if (isJumping)
+            {
+                animator.SetFloat("Jumping", 1);
+            }
+            else
+            {
+                animator.SetFloat("Jumping", -1);
+            }
+            animator.SetFloat("InputMove", 0);
+        }
+
+        float yStore = moveDirection.y;
+        moveDirection = GetMoveDirection() * currentMoveSpeed;
+        moveDirection.y = yStore;
+
+        moveDirection.y = moveDirection.y + (Physics.gravity.y * gravityScale);
+        characterController.Move(moveDirection * Time.deltaTime);
     }
 
-    // Calculates the vector3 that points from the camera to the player so as to get the direction it is looking at
-    private void CalculateMoveDirection()
+    public Vector3 GetMoveDirection()
     {
-        auxPoint = transform.position;
-        auxPoint.y = cameraPos.position.y;
-        moveDirection = auxPoint - cameraPos.position;
-        moveDirection = moveDirection.normalized;
+        Vector3 auxiliaryPoint = new Vector3(cameraPivot.position.x, playerCamera.position.y, cameraPivot.position.z);
+        Vector3 relativeForward = (auxiliaryPoint - playerCamera.position).normalized;
+
+        return ((relativeForward * vertical) + (cameraPivot.right * horizontal)).normalized;
     }
 }
