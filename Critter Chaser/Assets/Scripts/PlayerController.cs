@@ -10,7 +10,7 @@ public class PlayerController : MonoBehaviour
     private float currentMoveSpeed;
     public float jumpForce;
     public CharacterController characterController;
-    public Transform cameraPivot;
+    public Transform cameraTarget;
     public Transform playerCamera;
     public Transform playerGraphics;
     public Animator animator;
@@ -62,7 +62,7 @@ public class PlayerController : MonoBehaviour
             animator.SetFloat("Jumping", 0);
             moveDirection.y = 0f;
 
-            if (Input.GetButtonDown("Jump"))
+            if (Input.GetAxis("Jump") > 0)
             {
                 moveDirection.y = jumpForce;
                 isJumping = true;
@@ -70,7 +70,7 @@ public class PlayerController : MonoBehaviour
         }
         else
         {
-            if (isJumping)
+            if (moveDirection.y > 0)
             {
                 animator.SetFloat("Jumping", 1);
             }
@@ -91,9 +91,9 @@ public class PlayerController : MonoBehaviour
 
     public Vector3 GetMoveDirection()
     {
-        Vector3 auxiliaryPoint = new Vector3(cameraPivot.position.x, playerCamera.position.y, cameraPivot.position.z);
+        Vector3 auxiliaryPoint = new Vector3(cameraTarget.position.x, playerCamera.position.y, cameraTarget.position.z);
         Vector3 relativeForward = (auxiliaryPoint - playerCamera.position).normalized;
 
-        return ((relativeForward * vertical) + (cameraPivot.right * horizontal)).normalized;
+        return ((relativeForward * vertical) + (playerCamera.right * horizontal)).normalized;
     }
 }
