@@ -5,33 +5,41 @@ using UnityEngine;
 public class CameraControl : MonoBehaviour
 {
 
-    public float mouseSensitivity = 100.0f;
-    public float clampAngle = 80.0f;
+    [SerializeField] private float sensitivityX = 4f;
+    [SerializeField] private float sensitivityY = 1f;
+    [SerializeField] private float minAngleY = -80.0f;
+    [SerializeField] private float maxAngleY = 80.0f;
+    [SerializeField] private Transform target;
+    [SerializeField] private float smoothSpeed;
+    [SerializeField] private float distance;
 
-    private float rotY = 0.0f; // rotation around the up/y axis
-    private float rotX = 0.0f; // rotation around the right/x axis
+    private Vector3 offsetDirection;
+    private float currentX, currentY;
 
     void Awake()
     {
-        Vector3 rot = transform.localRotation.eulerAngles;
-        rotY = rot.y;
-        rotX = rot.x;
+        offsetDirection = new Vector3(0, 0, -distance);
+        smoothSpeed = smoothSpeed * Time.deltaTime;
         Cursor.lockState = CursorLockMode.Locked;
     }
 
-    Quaternion localRotation;
     void Update()
     {
-        float mouseX = Input.GetAxis("Mouse X");
-        float mouseY = -Input.GetAxis("Mouse Y");
+        currentX += Input.GetAxis("Mouse X");
+        currentY += -Input.GetAxis("Mouse Y");
 
-        rotY += mouseX * mouseSensitivity * Time.deltaTime;
-        rotX += mouseY * mouseSensitivity * Time.deltaTime;
+        currentY = Mathf.Clamp(currentY, minAngleY, maxAngleY);
+    }
 
-        rotX = Mathf.Clamp(rotX, -clampAngle, clampAngle);
+    private void LateUpdate()
+    {
+        Quaternion rotation = Quaternion.Euler(currentY, currentX, 0);
+        Vector3 desiredPosition = this.target.position;
+        Vector3 smoothedPosition = Vector3.Lerp(transform.position, desiredPosition, smoothSpeed);
+        //this.transform.position = smoothedPosition;
+        transform.LookAt(target.position);
+        this.transform.position = smoothedPosition + rotation * offsetDirection;
 
-        localRotation = Quaternion.Euler(rotX, rotY, 0.0f);
-        transform.rotation = localRotation;
     }
 
 }
