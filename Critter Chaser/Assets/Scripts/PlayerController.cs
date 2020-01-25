@@ -58,17 +58,21 @@ public class PlayerController : MonoBehaviour
 
         if (characterController.isGrounded)
         {
-            isJumping = false;
-            animator.SetFloat("Jumping", 0);
+            if (isJumping)
+            {
+                animator.SetTrigger("Land");
+                isJumping = false;
+            }
             moveDirection.y = 0f;
 
             if (Input.GetAxis("Jump") > 0)
             {
+                animator.SetTrigger("Jump");
                 moveDirection.y = jumpForce;
                 isJumping = true;
             }
         }
-        else
+        /*else
         {
             if (moveDirection.y > 0)
             {
@@ -79,7 +83,7 @@ public class PlayerController : MonoBehaviour
                 animator.SetFloat("Jumping", -1);
             }
             animator.SetFloat("InputMove", 0);
-        }
+        }*/
 
         float yStore = moveDirection.y;
         moveDirection = GetMoveDirection() * currentMoveSpeed;
